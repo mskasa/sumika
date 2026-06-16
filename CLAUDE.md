@@ -232,10 +232,10 @@ cmd.Stderr = os.Stderr
 - [x] `sumika remove <name>` — プロジェクト登録解除
 
 ### Phase 2: Webダッシュボード
-- [ ] `sumika serve` — Webサーバー起動(ルーティング骨格のみ実装済み)
-- [ ] プロジェクトカード一覧の表示
-- [ ] git status・最終更新日時の表示
-- [ ] [Open]ボタンでの起動連携
+- [x] `sumika serve` — Webサーバー起動(HTMX + html/template、embed同梱)
+- [x] プロジェクトカード一覧の表示
+- [x] git status・最終更新日時の表示(相対時刻)
+- [x] [Open]ボタンでの起動連携
 
 ### Phase 3: AIコンテキスト可視化
 - [ ] Claude Codeアダプターの実装
@@ -447,3 +447,10 @@ MIT License
 - [ ] ロゴ・タグラインの作成
 - [ ] READMEの初稿(コンセプト・既存OSSとの差別化・インストール手順)
 - [ ] CONTRIBUTING.md・Issue/PRテンプレートの作成
+
+## 既知の問題・改善タスク
+
+### Phase 2 動作確認で発見
+
+- [ ] **`SO_REUSEADDR`対応**: `sumika serve` 停止直後に再起動すると `bind: address already in use` になる。`net.ListenConfig{Control: ...}` で `SO_REUSEADDR` を設定するか、エラーメッセージを「しばらく待ってから再起動してください」と改善する
+- [ ] **HTMXのembed化**: 現在HTMXはCDN(`unpkg.com`)からロードしているためオフライン環境で動作しない。`htmx.min.js` を `web/static/` に同梱して `embed.FS` に含める

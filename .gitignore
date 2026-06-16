@@ -1,0 +1,6 @@
+sumika
+dist/
+*.test
+*.out
+.DS_Store
+kizami.local.toml

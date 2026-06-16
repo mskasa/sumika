@@ -1,11 +1,15 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"html/template"
 	"io/fs"
 	"log/slog"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -53,8 +57,23 @@ func (s *Server) Run(port int) error {
 	r.Post("/api/projects/{name}/open", s.handleOpen)
 
 	addr := fmt.Sprintf(":%d", port)
+	srv := &http.Server{Addr: addr, Handler: r}
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-quit
+		slog.Info("shutting down dashboard")
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_ = srv.Shutdown(ctx)
+	}()
+
 	slog.Info("starting dashboard", "addr", addr, "url", fmt.Sprintf("http://localhost%s", addr))
-	return http.ListenAndServe(addr, r)
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		return err
+	}
+	return nil
 }
 
 func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {

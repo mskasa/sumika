@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>sumika</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://unpkg.com/htmx.org@2.0.4/dist/htmx.min.js" crossorigin="anonymous"></script>
+</head>
+<body>
+  <header>
+    <h1>sumika</h1>
+    <p>personal project hub</p>
+  </header>
+  <main>
+    <div id="projects" hx-get="/api/projects" hx-trigger="every 30s" hx-swap="innerHTML">
+      {{template "cards" .}}
+    </div>
+  </main>
+  <div id="toast"></div>
+  <script>
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2500);
+    }
+  </script>
+</body>
+</html>

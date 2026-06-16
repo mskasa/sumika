@@ -3,6 +3,7 @@ package git_test
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/mskasa/sumika/internal/git"
 )
@@ -25,41 +26,41 @@ func (m *mockRunner) Run(dir string, args ...string) (string, error) {
 
 func TestGetStatus(t *testing.T) {
 	tests := []struct {
-		name      string
-		runner    *mockRunner
-		wantIsRepo bool
-		wantCommit string
-		wantCount  int
+		name           string
+		runner         *mockRunner
+		wantIsRepo     bool
+		wantCommitTime time.Time
+		wantCount      int
 	}{
 		{
 			name: "clean repo",
 			runner: &mockRunner{
 				responses: map[string]string{
-					"[log -1 --format=%ci]":   "2026-06-16 10:00:00 +0900",
-					"[status --porcelain]": "",
+					"[log -1 --format=%cI]": "2026-06-16T10:00:00+09:00",
+					"[status --porcelain]":  "",
 				},
 			},
-			wantIsRepo: true,
-			wantCommit: "2026-06-16 10:00:00 +0900",
-			wantCount:  0,
+			wantIsRepo:     true,
+			wantCommitTime: time.Date(2026, 6, 16, 10, 0, 0, 0, time.FixedZone("JST", 9*3600)),
+			wantCount:      0,
 		},
 		{
 			name: "repo with uncommitted changes",
 			runner: &mockRunner{
 				responses: map[string]string{
-					"[log -1 --format=%ci]":   "2026-06-16 10:00:00 +0900",
-					"[status --porcelain]": " M file1.go\n?? file2.go",
+					"[log -1 --format=%cI]": "2026-06-16T10:00:00+09:00",
+					"[status --porcelain]":  " M file1.go\n?? file2.go",
 				},
 			},
-			wantIsRepo: true,
-			wantCommit: "2026-06-16 10:00:00 +0900",
-			wantCount:  2,
+			wantIsRepo:     true,
+			wantCommitTime: time.Date(2026, 6, 16, 10, 0, 0, 0, time.FixedZone("JST", 9*3600)),
+			wantCount:      2,
 		},
 		{
 			name: "not a git repo",
 			runner: &mockRunner{
 				errors: map[string]error{
-					"[log -1 --format=%ci]": fmt.Errorf("not a git repo"),
+					"[log -1 --format=%cI]": fmt.Errorf("not a git repo"),
 				},
 			},
 			wantIsRepo: false,
@@ -78,8 +79,8 @@ func TestGetStatus(t *testing.T) {
 			if !tt.wantIsRepo {
 				return
 			}
-			if st.LastCommit != tt.wantCommit {
-				t.Errorf("LastCommit: got %q, want %q", st.LastCommit, tt.wantCommit)
+			if !st.LastCommitTime.Equal(tt.wantCommitTime) {
+				t.Errorf("LastCommitTime: got %v, want %v", st.LastCommitTime, tt.wantCommitTime)
 			}
 			if st.UncommittedCount != tt.wantCount {
 				t.Errorf("UncommittedCount: got %d, want %d", st.UncommittedCount, tt.wantCount)

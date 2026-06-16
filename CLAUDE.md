@@ -232,10 +232,10 @@ cmd.Stderr = os.Stderr
 - [x] `sumika remove <name>` — プロジェクト登録解除
 
 ### Phase 2: Webダッシュボード
-- [ ] `sumika serve` — Webサーバー起動(ルーティング骨格のみ実装済み)
-- [ ] プロジェクトカード一覧の表示
-- [ ] git status・最終更新日時の表示
-- [ ] [Open]ボタンでの起動連携
+- [x] `sumika serve` — Webサーバー起動(HTMX + html/template、embed同梱)
+- [x] プロジェクトカード一覧の表示
+- [x] git status・最終更新日時の表示(相対時刻)
+- [x] [Open]ボタンでの起動連携
 
 ### Phase 3: AIコンテキスト可視化
 - [ ] Claude Codeアダプターの実装

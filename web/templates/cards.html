@@ -1,0 +1,47 @@
+{{define "cards"}}
+{{if not .Projects}}
+<p class="empty">プロジェクトが登録されていません。<code>sumika add &lt;path&gt;</code> で追加してください。</p>
+{{else}}
+<div class="grid">
+{{range .Projects}}
+<div class="card">
+  <div class="card-header">
+    <h2 class="card-name">{{.Project.Name}}</h2>
+    <div class="card-actions">
+      <button
+        class="btn-open"
+        hx-post="/api/projects/{{.Project.Name}}/open"
+        hx-swap="none"
+        hx-on::after-request="showToast('{{.Project.Name}} を起動しました')"
+      >Open</button>
+      {{range .Project.Links}}
+      <a href="{{.URL}}" target="_blank" rel="noopener" class="btn-link">{{.Label}} ↗</a>
+      {{end}}
+    </div>
+  </div>
+  {{if .Project.Description}}
+  <p class="card-desc">{{.Project.Description}}</p>
+  {{end}}
+  <div class="card-meta">
+    <span class="path">📁 {{.Project.Path}}</span>
+    {{if .Status.IsRepo}}
+    <span>🕐 {{.LastCommitRel}}</span>
+    {{if gt .Status.UncommittedCount 0}}
+    <span class="status-dirty">📝 {{.Status.UncommittedCount}} 件の未コミット変更</span>
+    {{else}}
+    <span class="status-clean">✓ クリーン</span>
+    {{end}}
+    {{else}}
+    <span class="status-nogit">git リポジトリではありません</span>
+    {{end}}
+  </div>
+  {{if .Project.Tags}}
+  <div class="card-tags">
+    {{range .Project.Tags}}<span class="tag">{{.}}</span>{{end}}
+  </div>
+  {{end}}
+</div>
+{{end}}
+</div>
+{{end}}
+{{end}}

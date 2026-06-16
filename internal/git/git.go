@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+	"time"
 )
 
 type Runner interface {
@@ -23,9 +24,9 @@ func (r *CLIRunner) Run(dir string, args ...string) (string, error) {
 }
 
 type Status struct {
-	LastCommit     string
+	LastCommitTime   time.Time
 	UncommittedCount int
-	IsRepo         bool
+	IsRepo           bool
 }
 
 func GetStatus(dir string, runner Runner) (*Status, error) {
@@ -33,9 +34,14 @@ func GetStatus(dir string, runner Runner) (*Status, error) {
 		runner = &CLIRunner{}
 	}
 
-	lastCommit, err := runner.Run(dir, "log", "-1", "--format=%ci")
+	raw, err := runner.Run(dir, "log", "-1", "--format=%cI")
 	if err != nil {
 		return &Status{IsRepo: false}, nil
+	}
+
+	t, err := time.Parse(time.RFC3339, raw)
+	if err != nil {
+		return nil, fmt.Errorf("parse commit time %q: %w", raw, err)
 	}
 
 	porcelain, err := runner.Run(dir, "status", "--porcelain")
@@ -49,8 +55,8 @@ func GetStatus(dir string, runner Runner) (*Status, error) {
 	}
 
 	return &Status{
-		LastCommit:     lastCommit,
+		LastCommitTime:   t,
 		UncommittedCount: count,
-		IsRepo:         true,
+		IsRepo:           true,
 	}, nil
 }

@@ -205,7 +205,7 @@ func newStatusCmd() *cobra.Command {
 				if st.UncommittedCount > 0 {
 					changes = fmt.Sprintf("%d uncommitted", st.UncommittedCount)
 				}
-				fmt.Fprintf(w, "%s\t%s\t%s\n", p.Name, st.LastCommit, changes)
+				fmt.Fprintf(w, "%s\t%s\t%s\n", p.Name, st.LastCommitTime.Local().Format("2006-01-02 15:04:05 -0700"), changes)
 			}
 			return w.Flush()
 		},

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
+	"github.com/mskasa/sumika/internal/adapter/claudecode"
 	"github.com/mskasa/sumika/internal/config"
 	"github.com/mskasa/sumika/internal/git"
 	"github.com/mskasa/sumika/internal/launcher"
@@ -225,7 +226,7 @@ func newServeCmd() *cobra.Command {
 			if port == 0 {
 				port = cfg.Settings.Port
 			}
-			s := server.New(cfg)
+			s := server.New(cfg, claudecode.New())
 			return s.Run(port)
 		},
 	}

@@ -1,11 +1,16 @@
 package claudecode
 
 import (
+	"bufio"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
+	"time"
+	"unicode/utf8"
 
 	"github.com/mskasa/sumika/internal/adapter"
 )
@@ -37,9 +42,103 @@ func (a *Adapter) Launch(projectPath string) error {
 	return nil
 }
 
+// projectDirName converts a project path to the directory name used by Claude Code.
+// Both '/' and '.' are replaced with '-'.
+// e.g. /Users/foo.bar/baz → -Users-foo-bar-baz
+func projectDirName(projectPath string) string {
+	r := strings.ReplaceAll(projectPath, "/", "-")
+	return strings.ReplaceAll(r, ".", "-")
+}
+
+type jsonlEntry struct {
+	Message struct {
+		Role    string `json:"role"`
+		Content []struct {
+			Type string `json:"type"`
+			Text string `json:"text"`
+		} `json:"content"`
+	} `json:"message"`
+	Timestamp string `json:"timestamp"`
+}
+
 func (a *Adapter) GetSessionSummary(projectPath string) (*adapter.SessionSummary, error) {
-	// Phase 3 実装予定: ~/.claude/projects/ 配下のJSONLを読み込む
-	return nil, nil
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return nil, fmt.Errorf("get home dir: %w", err)
+	}
+
+	sessionDir := filepath.Join(home, ".claude", "projects", projectDirName(projectPath))
+	entries, err := os.ReadDir(sessionDir)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("read session dir: %w", err)
+	}
+
+	// 最新のJSONLファイルを探す
+	var latestFile string
+	var latestMod time.Time
+	for _, e := range entries {
+		if e.IsDir() || !strings.HasSuffix(e.Name(), ".jsonl") {
+			continue
+		}
+		info, err := e.Info()
+		if err != nil {
+			continue
+		}
+		if info.ModTime().After(latestMod) {
+			latestMod = info.ModTime()
+			latestFile = filepath.Join(sessionDir, e.Name())
+		}
+	}
+	if latestFile == "" {
+		return nil, nil
+	}
+
+	summary, lastActive, err := parseLatestAssistantText(latestFile)
+	if err != nil || summary == "" {
+		return nil, err
+	}
+
+	return &adapter.SessionSummary{
+		ProjectName: filepath.Base(projectPath),
+		LastActive:  lastActive,
+		Summary:     truncate(summary, 200),
+	}, nil
+}
+
+// parseLatestAssistantText reads the JSONL file and returns the last assistant text message.
+func parseLatestAssistantText(path string) (string, time.Time, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", time.Time{}, fmt.Errorf("open jsonl: %w", err)
+	}
+	defer f.Close()
+
+	var lastText string
+	var lastTime time.Time
+
+	scanner := bufio.NewScanner(f)
+	scanner.Buffer(make([]byte, 1024*1024), 1024*1024) // 1MB per line
+	for scanner.Scan() {
+		var e jsonlEntry
+		if err := json.Unmarshal(scanner.Bytes(), &e); err != nil {
+			continue
+		}
+		if e.Message.Role != "assistant" {
+			continue
+		}
+		for _, c := range e.Message.Content {
+			if c.Type == "text" && strings.TrimSpace(c.Text) != "" {
+				t, _ := time.Parse(time.RFC3339, e.Timestamp)
+				lastText = strings.TrimSpace(c.Text)
+				lastTime = t
+				break
+			}
+		}
+	}
+	return lastText, lastTime, scanner.Err()
 }
 
 func (a *Adapter) GetContextFile(projectPath string) (string, error) {
@@ -52,4 +151,12 @@ func (a *Adapter) GetContextFile(projectPath string) (string, error) {
 		return "", fmt.Errorf("read CLAUDE.md: %w", err)
 	}
 	return string(data), nil
+}
+
+func truncate(s string, maxRunes int) string {
+	if utf8.RuneCountInString(s) <= maxRunes {
+		return s
+	}
+	runes := []rune(s)
+	return string(runes[:maxRunes]) + "…"
 }

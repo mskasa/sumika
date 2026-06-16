@@ -452,5 +452,5 @@ MIT License
 
 ### Phase 2 動作確認で発見
 
-- [ ] **`SO_REUSEADDR`対応**: `sumika serve` 停止直後に再起動すると `bind: address already in use` になる。`net.ListenConfig{Control: ...}` で `SO_REUSEADDR` を設定するか、エラーメッセージを「しばらく待ってから再起動してください」と改善する
-- [ ] **HTMXのembed化**: 現在HTMXはCDN(`unpkg.com`)からロードしているためオフライン環境で動作しない。`htmx.min.js` を `web/static/` に同梱して `embed.FS` に含める
+- [x] **グレースフルシャットダウン**: SIGINT/SIGTERM受信時に `http.Server.Shutdown` を呼び、ポートを即座に開放するよう修正済み
+- [x] **HTMXのembed化**: `htmx.min.js` を `web/static/` に同梱し、CDN依存を解消済み

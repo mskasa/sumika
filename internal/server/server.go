@@ -9,11 +9,13 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/mskasa/sumika/internal/adapter"
 	"github.com/mskasa/sumika/internal/config"
 	"github.com/mskasa/sumika/internal/git"
 	"github.com/mskasa/sumika/internal/launcher"
@@ -22,23 +24,27 @@ import (
 )
 
 type Server struct {
-	cfg  *config.Config
-	tmpl *template.Template
+	cfg     *config.Config
+	tmpl    *template.Template
+	adapter adapter.AIAdapter
 }
 
 type ProjectView struct {
-	Project       config.Project
-	Status        *git.Status
-	LastCommitRel string
+	Project        config.Project
+	Status         *git.Status
+	LastCommitRel  string
+	SessionSummary *adapter.SessionSummary
+	LastActiveRel  string
+	ContextFileMod string
 }
 
 type PageData struct {
 	Projects []ProjectView
 }
 
-func New(cfg *config.Config) *Server {
+func New(cfg *config.Config, a adapter.AIAdapter) *Server {
 	tmpl := template.Must(template.ParseFS(webfiles.FS, "templates/index.html", "templates/cards.html"))
-	return &Server{cfg: cfg, tmpl: tmpl}
+	return &Server{cfg: cfg, tmpl: tmpl, adapter: a}
 }
 
 func (s *Server) Run(port int) error {
@@ -77,7 +83,7 @@ func (s *Server) Run(port int) error {
 }
 
 func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
-	data := s.buildPageData()
+	data := s.buildPageData(s.cfg)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := s.tmpl.Execute(w, data); err != nil {
 		slog.Error("render index", "err", err)
@@ -89,7 +95,7 @@ func (s *Server) handleProjects(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		cfg = s.cfg
 	}
-	data := buildPageDataFrom(cfg)
+	data := s.buildPageData(cfg)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := s.tmpl.ExecuteTemplate(w, "cards", data); err != nil {
 		slog.Error("render cards", "err", err)
@@ -119,26 +125,39 @@ func (s *Server) handleOpen(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (s *Server) buildPageData() PageData {
-	return buildPageDataFrom(s.cfg)
-}
-
-func buildPageDataFrom(cfg *config.Config) PageData {
+func (s *Server) buildPageData(cfg *config.Config) PageData {
 	views := make([]ProjectView, 0, len(cfg.Projects))
 	for _, p := range cfg.Projects {
 		st, err := git.GetStatus(p.Path, nil)
 		if err != nil || st == nil {
 			st = &git.Status{}
 		}
-		rel := ""
-		if st.IsRepo && !st.LastCommitTime.IsZero() {
-			rel = relativeTime(st.LastCommitTime)
-		}
-		views = append(views, ProjectView{
+
+		view := ProjectView{
 			Project:       p,
 			Status:        st,
-			LastCommitRel: rel,
-		})
+			LastCommitRel: "",
+		}
+		if st.IsRepo && !st.LastCommitTime.IsZero() {
+			view.LastCommitRel = relativeTime(st.LastCommitTime)
+		}
+
+		// AIセッション要約
+		if s.adapter != nil {
+			if ss, err := s.adapter.GetSessionSummary(p.Path); err == nil && ss != nil {
+				view.SessionSummary = ss
+				if !ss.LastActive.IsZero() {
+					view.LastActiveRel = relativeTime(ss.LastActive)
+				}
+			}
+		}
+
+		// CLAUDE.mdの最終更新日時
+		if info, err := os.Stat(filepath.Join(p.Path, "CLAUDE.md")); err == nil {
+			view.ContextFileMod = relativeTime(info.ModTime())
+		}
+
+		views = append(views, view)
 	}
 	return PageData{Projects: views}
 }

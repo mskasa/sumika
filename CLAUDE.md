@@ -238,10 +238,10 @@ cmd.Stderr = os.Stderr
 - [x] [Open]ボタンでの起動連携
 
 ### Phase 3: AIコンテキスト可視化
-- [ ] Claude Codeアダプターの実装
-- [ ] `~/.claude/`配下のセッション履歴読み込み
-- [ ] 各プロジェクトカードへの「前回AIセッション要約」表示
-- [ ] CLAUDE.mdの内容表示・最終更新日時表示
+- [x] Claude Codeアダプターの実装(`internal/adapter/claudecode/`)
+- [x] `~/.claude/projects/`配下のJSONLセッション履歴読み込み
+- [x] 各プロジェクトカードへの「前回AIセッション要約」表示(最後のアシスタントメッセージ冒頭200文字)
+- [x] CLAUDE.mdの最終更新日時表示
 
 ### Phase 4: 拡張
 - [ ] タグフィルタリング・ソート

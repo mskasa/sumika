@@ -459,3 +459,5 @@ MIT License
 
 - [x] **ランチャーのstdio未継承**: `sumika open` でAIツール(claude)を起動する際、stdin/stdout/stderrを継承せずバックグラウンド起動していたためTUIが動作しなかった。`launchForeground` を追加し `cmd.Run()` でブロッキング起動するよう修正済み。Webダッシュボードの Open ボタンはターミナル不在のため `OpenBackground` に切り替えてエディタのみ起動するよう変更済み
 - [x] **handleOpenが起動時設定を使用**: `handleOpen` がサーバー起動時に読んだ `s.cfg` を参照していたため、起動後に追加したプロジェクトの Open ボタンが 404 を返していた。`handleProjects` と同様に毎回 `config.Load()` で再読込するよう修正済み
+- [x] **エディタにパスが渡っていない**: `launchBackground` は `cmd.Dir` のみ設定していたが、VS Code 等は `code /path/to/project` のように引数でパスを受け取る必要がある。`launchEditor` を追加してパスを引数として渡すよう修正済み
+- **設計メモ**: ダッシュボードの Open ボタンはエディタのみ起動（案A）。claude はターミナルが必要なため `sumika open <name>`（CLI）でのみ起動する

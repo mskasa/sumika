@@ -242,6 +242,7 @@ cmd.Stderr = os.Stderr
 - ~~各プロジェクトカードへの「前回AIセッション要約」表示~~ → 削除済み(ADR: `docs/decisions/2026-06-17-remove-ai-session-summary-display.md`)
 
 ### Phase 4: 拡張
+- [x] タスクチェックリスト表示(`tasks_file`でMarkdownチェックボックスファイルを指定、UI上でチェックするとファイル書き換え＆非表示)
 - [ ] タグフィルタリング・ソート
 - [ ] グローバルCLAUDE.mdの同期機能
 - [ ] 他AIツールアダプター(cursor, aider等)

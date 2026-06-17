@@ -6,11 +6,13 @@ import (
 	"html/template"
 	"io/fs"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"strconv"
+	"sync"
 	"syscall"
 	"time"
 
@@ -29,12 +31,18 @@ type Server struct {
 	tmpl *template.Template
 }
 
+type PortStatus struct {
+	Port int
+	Open bool
+}
+
 type ProjectView struct {
 	Project        config.Project
 	Status         *git.Status
 	LastCommitRel  string
 	ContextFileMod string
 	TaskItems      []task.Item
+	PortStatuses   []PortStatus
 }
 
 type PageData struct {
@@ -60,6 +68,7 @@ func (s *Server) Run(port int) error {
 	r.Get("/", s.handleIndex)
 	r.Get("/api/projects", s.handleProjects)
 	r.Post("/api/projects/{name}/open", s.handleOpen)
+	r.Post("/api/projects/{name}/start", s.handleStart)
 	r.Post("/api/projects/{name}/tasks/{lineIndex}/check", s.handleTaskCheck)
 
 	addr := fmt.Sprintf(":%d", port)
@@ -117,11 +126,26 @@ func (s *Server) handleOpen(w http.ResponseWriter, r *http.Request) {
 	if p.Launch.Editor {
 		editor = cfg.Settings.Editor
 	}
-	if err := launcher.OpenBackground(p.Path, editor, p.Launch.Commands); err != nil {
+	if err := launcher.OpenBackground(p.Path, editor); err != nil {
 		slog.Error("open project", "name", name, "err", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *Server) handleStart(w http.ResponseWriter, r *http.Request) {
+	name := chi.URLParam(r, "name")
+	cfg, err := config.Load()
+	if err != nil {
+		cfg = s.cfg
+	}
+	p, err := project.Find(cfg, name)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	launcher.RunCommands(p.Path, p.Launch.Commands)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -189,9 +213,34 @@ func (s *Server) buildPageData(cfg *config.Config) PageData {
 			}
 		}
 
+		if len(p.Launch.Ports) > 0 {
+			view.PortStatuses = checkPorts(p.Launch.Ports)
+		}
+
 		views = append(views, view)
 	}
 	return PageData{Projects: views}
+}
+
+// checkPorts checks each port concurrently via TCP dial.
+func checkPorts(ports []int) []PortStatus {
+	results := make([]PortStatus, len(ports))
+	var wg sync.WaitGroup
+	for i, port := range ports {
+		wg.Add(1)
+		go func(i, port int) {
+			defer wg.Done()
+			conn, err := net.DialTimeout("tcp", fmt.Sprintf("localhost:%d", port), 300*time.Millisecond)
+			if err == nil {
+				conn.Close()
+				results[i] = PortStatus{Port: port, Open: true}
+			} else {
+				results[i] = PortStatus{Port: port, Open: false}
+			}
+		}(i, port)
+	}
+	wg.Wait()
+	return results
 }
 
 func relativeTime(t time.Time) string {

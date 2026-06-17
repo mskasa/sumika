@@ -12,8 +12,16 @@
         class="btn-open"
         hx-post="/api/projects/{{.Project.Name}}/open"
         hx-swap="none"
-        hx-on::after-request="showToast('{{.Project.Name}} を起動しました')"
+        hx-on::after-request="showToast('{{.Project.Name}} を開きました')"
       >Open</button>
+      {{if .Project.Launch.Commands}}
+      <button
+        class="btn-start"
+        hx-post="/api/projects/{{.Project.Name}}/start"
+        hx-swap="none"
+        hx-on::after-request="showToast('{{.Project.Name}} を起動しました')"
+      >▶ Start</button>
+      {{end}}
       {{range .Project.Links}}
       <a href="{{.URL}}" target="_blank" rel="noopener" class="btn-link">{{.Label}} ↗</a>
       {{end}}
@@ -35,6 +43,15 @@
     <span class="status-nogit">git リポジトリではありません</span>
     {{end}}
   </div>
+  {{if .PortStatuses}}
+  <div class="card-ports">
+    {{range .PortStatuses}}
+    <span class="port-badge {{if .Open}}port-open{{else}}port-closed{{end}}">
+      {{if .Open}}🟢{{else}}⚫{{end}} :{{.Port}}
+    </span>
+    {{end}}
+  </div>
+  {{end}}
   {{template "task-list" .}}
   {{if .ContextFileMod}}
   <div class="card-context">

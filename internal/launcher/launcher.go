@@ -27,20 +27,25 @@ func Open(dir, editor, aiTool string, commands []string) error {
 	return nil
 }
 
-// OpenBackground is for web dashboard use: runs commands and editor in background.
+// OpenBackground is for web dashboard use: launches editor in background.
+// Commands are handled separately via RunCommands (Start button).
 // The AI tool is intentionally omitted — no terminal is available from a web context.
-func OpenBackground(dir, editor string, commands []string) error {
-	for _, c := range commands {
-		if err := launchBackground(dir, c); err != nil {
-			slog.Warn("failed to run command", "cmd", c, "err", err)
-		}
-	}
+func OpenBackground(dir, editor string) error {
 	if editor != "" {
 		if err := launchEditor(dir, editor); err != nil {
 			slog.Warn("failed to launch editor", "editor", editor, "err", err)
 		}
 	}
 	return nil
+}
+
+// RunCommands runs each command in the background (for web dashboard Start button).
+func RunCommands(dir string, commands []string) {
+	for _, c := range commands {
+		if err := launchBackground(dir, c); err != nil {
+			slog.Warn("failed to run command", "cmd", c, "err", err)
+		}
+	}
 }
 
 // launchEditor starts an editor with the project directory as an argument (e.g. `code /path/to/project`).

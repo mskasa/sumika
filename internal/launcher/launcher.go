@@ -17,7 +17,7 @@ func Open(dir, editor, aiTool string, commands []string) error {
 		}
 	}
 	if editor != "" {
-		if err := launchBackground(dir, editor); err != nil {
+		if err := launchEditor(dir, editor); err != nil {
 			slog.Warn("failed to launch editor", "editor", editor, "err", err)
 		}
 	}
@@ -36,11 +36,23 @@ func OpenBackground(dir, editor string, commands []string) error {
 		}
 	}
 	if editor != "" {
-		if err := launchBackground(dir, editor); err != nil {
+		if err := launchEditor(dir, editor); err != nil {
 			slog.Warn("failed to launch editor", "editor", editor, "err", err)
 		}
 	}
 	return nil
+}
+
+// launchEditor starts an editor with the project directory as an argument (e.g. `code /path/to/project`).
+func launchEditor(dir, editor string) error {
+	parts := strings.Fields(editor)
+	if len(parts) == 0 {
+		return fmt.Errorf("empty editor command")
+	}
+	args := append(parts[1:], dir)
+	cmd := exec.Command(parts[0], args...)
+	cmd.Dir = dir
+	return cmd.Start()
 }
 
 // launchBackground starts a process detached from the terminal (no stdio).

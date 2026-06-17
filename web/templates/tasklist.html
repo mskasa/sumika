@@ -1,0 +1,21 @@
+{{define "task-list"}}
+{{$name := .Project.Name}}
+{{$unchecked := 0}}
+{{range .TaskItems}}{{if not .Done}}{{$unchecked = 1}}{{end}}{{end}}
+{{if .TaskItems}}
+<div id="tasks-{{$name}}" class="card-tasks">
+  {{range .TaskItems}}
+  {{if not .Done}}
+  <label class="task-item">
+    <input type="checkbox"
+      hx-post="/api/projects/{{$name}}/tasks/{{.LineIndex}}/check"
+      hx-target="#tasks-{{$name}}"
+      hx-swap="outerHTML"
+    >
+    <span class="task-text">{{.Text}}</span>
+  </label>
+  {{end}}
+  {{end}}
+</div>
+{{end}}
+{{end}}

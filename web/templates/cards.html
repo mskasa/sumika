@@ -35,15 +35,6 @@
     <span class="status-nogit">git リポジトリではありません</span>
     {{end}}
   </div>
-  {{if .SessionSummary}}
-  <div class="card-ai">
-    <div class="ai-header">
-      <span class="ai-label">🤖 前回AIセッション</span>
-      {{if .LastActiveRel}}<span class="ai-time">{{.LastActiveRel}}</span>{{end}}
-    </div>
-    <p class="ai-summary">{{.SessionSummary.Summary}}</p>
-  </div>
-  {{end}}
   {{if .ContextFileMod}}
   <div class="card-context">
     <span class="context-label">📄 CLAUDE.md</span>

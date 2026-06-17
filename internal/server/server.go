@@ -15,7 +15,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/mskasa/sumika/internal/adapter"
 	"github.com/mskasa/sumika/internal/config"
 	"github.com/mskasa/sumika/internal/git"
 	"github.com/mskasa/sumika/internal/launcher"
@@ -24,17 +23,14 @@ import (
 )
 
 type Server struct {
-	cfg     *config.Config
-	tmpl    *template.Template
-	adapter adapter.AIAdapter
+	cfg  *config.Config
+	tmpl *template.Template
 }
 
 type ProjectView struct {
 	Project        config.Project
 	Status         *git.Status
 	LastCommitRel  string
-	SessionSummary *adapter.SessionSummary
-	LastActiveRel  string
 	ContextFileMod string
 }
 
@@ -42,9 +38,9 @@ type PageData struct {
 	Projects []ProjectView
 }
 
-func New(cfg *config.Config, a adapter.AIAdapter) *Server {
+func New(cfg *config.Config) *Server {
 	tmpl := template.Must(template.ParseFS(webfiles.FS, "templates/index.html", "templates/cards.html"))
-	return &Server{cfg: cfg, tmpl: tmpl, adapter: a}
+	return &Server{cfg: cfg, tmpl: tmpl}
 }
 
 func (s *Server) Run(port int) error {
@@ -142,17 +138,6 @@ func (s *Server) buildPageData(cfg *config.Config) PageData {
 			view.LastCommitRel = relativeTime(st.LastCommitTime)
 		}
 
-		// AIセッション要約
-		if s.adapter != nil {
-			if ss, err := s.adapter.GetSessionSummary(p.Path); err == nil && ss != nil {
-				view.SessionSummary = ss
-				if !ss.LastActive.IsZero() {
-					view.LastActiveRel = relativeTime(ss.LastActive)
-				}
-			}
-		}
-
-		// CLAUDE.mdの最終更新日時
 		if info, err := os.Stat(filepath.Join(p.Path, "CLAUDE.md")); err == nil {
 			view.ContextFileMod = relativeTime(info.ModTime())
 		}

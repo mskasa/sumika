@@ -158,45 +158,6 @@ main {
   font-family: monospace;
 }
 
-.card-ai {
-  background: #1e1f2e;
-  border: 1px solid #2a2d3a;
-  border-left: 3px solid var(--accent);
-  border-radius: 6px;
-  padding: 0.6rem 0.75rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
-
-.ai-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-
-.ai-label {
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--accent);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.ai-time {
-  font-size: 0.72rem;
-  color: var(--text-muted);
-}
-
-.ai-summary {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  line-height: 1.45;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
 .card-context {
   display: flex;
   align-items: center;

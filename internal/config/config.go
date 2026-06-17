@@ -34,6 +34,7 @@ type Launch struct {
 	Editor   bool     `yaml:"editor"`
 	AI       bool     `yaml:"ai"`
 	Commands []string `yaml:"commands"`
+	Ports    []int    `yaml:"ports,omitempty"`
 }
 
 type Link struct {

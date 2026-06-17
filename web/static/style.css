@@ -98,6 +98,20 @@ main {
 .btn-open:hover { background: var(--accent-hover); }
 .btn-open.htmx-request { opacity: 0.6; cursor: wait; }
 
+.btn-start {
+  background: transparent;
+  color: var(--green);
+  border: 1px solid var(--green);
+  border-radius: 5px;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.btn-start:hover { background: var(--green); color: #000; }
+.btn-start.htmx-request { opacity: 0.6; cursor: wait; }
+
 .btn-link {
   background: transparent;
   color: var(--text-muted);
@@ -157,6 +171,23 @@ main {
   padding: 0.1rem 0.4rem;
   font-family: monospace;
 }
+
+.card-ports {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.port-badge {
+  font-size: 0.75rem;
+  font-family: "SF Mono", "Fira Code", monospace;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+
+.port-open  { color: var(--green); border-color: var(--green); }
+.port-closed { color: var(--text-muted); }
 
 .card-tasks {
   display: flex;

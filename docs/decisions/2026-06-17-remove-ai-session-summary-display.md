@@ -34,10 +34,3 @@ sumika 側で要約を表示する必要はない。
 - **ユーザーメッセージも一緒に表示**: 情報量は増えるが作業想起には依然不十分
 - **Claude API でサマリー生成**: コストと遅延が発生する。ユーザー自身が claude に聞けば済む
 
-## Related Files
-
-- internal/adapter/adapter.go
-- internal/adapter/claudecode/claudecode.go
-- internal/server/server.go
-- web/templates/cards.html
-- web/static/style.css

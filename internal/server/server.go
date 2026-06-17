@@ -113,11 +113,7 @@ func (s *Server) handleOpen(w http.ResponseWriter, r *http.Request) {
 	if p.Launch.Editor {
 		editor = s.cfg.Settings.Editor
 	}
-	aiTool := ""
-	if p.Launch.AI {
-		aiTool = s.cfg.Settings.AITool
-	}
-	if err := launcher.Open(p.Path, editor, aiTool, p.Launch.Commands); err != nil {
+	if err := launcher.OpenBackground(p.Path, editor, p.Launch.Commands); err != nil {
 		slog.Error("open project", "name", name, "err", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

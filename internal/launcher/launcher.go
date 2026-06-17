@@ -3,30 +3,48 @@ package launcher
 import (
 	"fmt"
 	"log/slog"
+	"os"
 	"os/exec"
 	"strings"
 )
 
+// Open is for CLI use: runs commands and editor in background, then launches the AI tool
+// in the foreground with inherited stdio (blocking until the user exits).
 func Open(dir, editor, aiTool string, commands []string) error {
+	for _, c := range commands {
+		if err := launchBackground(dir, c); err != nil {
+			slog.Warn("failed to run command", "cmd", c, "err", err)
+		}
+	}
 	if editor != "" {
-		if err := launch(dir, editor); err != nil {
+		if err := launchBackground(dir, editor); err != nil {
 			slog.Warn("failed to launch editor", "editor", editor, "err", err)
 		}
 	}
 	if aiTool != "" {
-		if err := launch(dir, aiTool); err != nil {
-			slog.Warn("failed to launch ai tool", "ai_tool", aiTool, "err", err)
+		return launchForeground(dir, aiTool)
+	}
+	return nil
+}
+
+// OpenBackground is for web dashboard use: runs commands and editor in background.
+// The AI tool is intentionally omitted — no terminal is available from a web context.
+func OpenBackground(dir, editor string, commands []string) error {
+	for _, c := range commands {
+		if err := launchBackground(dir, c); err != nil {
+			slog.Warn("failed to run command", "cmd", c, "err", err)
 		}
 	}
-	for _, c := range commands {
-		if err := runCommand(dir, c); err != nil {
-			slog.Warn("failed to run command", "cmd", c, "err", err)
+	if editor != "" {
+		if err := launchBackground(dir, editor); err != nil {
+			slog.Warn("failed to launch editor", "editor", editor, "err", err)
 		}
 	}
 	return nil
 }
 
-func launch(dir, command string) error {
+// launchBackground starts a process detached from the terminal (no stdio).
+func launchBackground(dir, command string) error {
 	parts := strings.Fields(command)
 	if len(parts) == 0 {
 		return fmt.Errorf("empty command")
@@ -36,12 +54,17 @@ func launch(dir, command string) error {
 	return cmd.Start()
 }
 
-func runCommand(dir, command string) error {
+// launchForeground runs a process in the foreground with inherited stdin/stdout/stderr.
+// It blocks until the process exits (e.g. the user quits the AI tool).
+func launchForeground(dir, command string) error {
 	parts := strings.Fields(command)
 	if len(parts) == 0 {
 		return fmt.Errorf("empty command")
 	}
 	cmd := exec.Command(parts[0], parts[1:]...)
 	cmd.Dir = dir
-	return cmd.Start()
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }

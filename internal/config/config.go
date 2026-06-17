@@ -25,6 +25,7 @@ type Project struct {
 	Path        string   `yaml:"path"`
 	Description string   `yaml:"description"`
 	Tags        []string `yaml:"tags"`
+	TasksFile   string   `yaml:"tasks_file,omitempty"`
 	Launch      Launch   `yaml:"launch"`
 	Links       []Link   `yaml:"links"`
 }

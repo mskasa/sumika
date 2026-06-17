@@ -158,6 +158,31 @@ main {
   font-family: monospace;
 }
 
+.card-tasks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.task-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.task-item input[type="checkbox"] {
+  margin-top: 0.15rem;
+  flex-shrink: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.task-item:hover .task-text { color: var(--text); }
+
 .card-context {
   display: flex;
   align-items: center;

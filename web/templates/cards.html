@@ -35,6 +35,7 @@
     <span class="status-nogit">git リポジトリではありません</span>
     {{end}}
   </div>
+  {{template "task-list" .}}
   {{if .ContextFileMod}}
   <div class="card-context">
     <span class="context-label">📄 CLAUDE.md</span>

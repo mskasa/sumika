@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -19,6 +20,7 @@ import (
 	"github.com/mskasa/sumika/internal/git"
 	"github.com/mskasa/sumika/internal/launcher"
 	"github.com/mskasa/sumika/internal/project"
+	"github.com/mskasa/sumika/internal/task"
 	webfiles "github.com/mskasa/sumika/web"
 )
 
@@ -32,6 +34,7 @@ type ProjectView struct {
 	Status         *git.Status
 	LastCommitRel  string
 	ContextFileMod string
+	TaskItems      []task.Item
 }
 
 type PageData struct {
@@ -39,7 +42,7 @@ type PageData struct {
 }
 
 func New(cfg *config.Config) *Server {
-	tmpl := template.Must(template.ParseFS(webfiles.FS, "templates/index.html", "templates/cards.html"))
+	tmpl := template.Must(template.ParseFS(webfiles.FS, "templates/*.html"))
 	return &Server{cfg: cfg, tmpl: tmpl}
 }
 
@@ -57,6 +60,7 @@ func (s *Server) Run(port int) error {
 	r.Get("/", s.handleIndex)
 	r.Get("/api/projects", s.handleProjects)
 	r.Post("/api/projects/{name}/open", s.handleOpen)
+	r.Post("/api/projects/{name}/tasks/{lineIndex}/check", s.handleTaskCheck)
 
 	addr := fmt.Sprintf(":%d", port)
 	srv := &http.Server{Addr: addr, Handler: r}
@@ -81,7 +85,7 @@ func (s *Server) Run(port int) error {
 func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 	data := s.buildPageData(s.cfg)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := s.tmpl.Execute(w, data); err != nil {
+	if err := s.tmpl.ExecuteTemplate(w, "index.html", data); err != nil {
 		slog.Error("render index", "err", err)
 	}
 }
@@ -121,6 +125,43 @@ func (s *Server) handleOpen(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (s *Server) handleTaskCheck(w http.ResponseWriter, r *http.Request) {
+	name := chi.URLParam(r, "name")
+	lineIndex, err := strconv.Atoi(chi.URLParam(r, "lineIndex"))
+	if err != nil {
+		http.Error(w, "invalid line index", http.StatusBadRequest)
+		return
+	}
+
+	cfg, err := config.Load()
+	if err != nil {
+		cfg = s.cfg
+	}
+	p, err := project.Find(cfg, name)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	if p.TasksFile == "" {
+		http.Error(w, "no tasks_file configured", http.StatusBadRequest)
+		return
+	}
+
+	tasksPath := task.ResolvePath(p.Path, p.TasksFile)
+	if err := task.Check(tasksPath, lineIndex); err != nil {
+		slog.Error("check task", "name", name, "lineIndex", lineIndex, "err", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	items, _ := task.Load(tasksPath)
+	view := ProjectView{Project: *p, TaskItems: items}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := s.tmpl.ExecuteTemplate(w, "task-list", view); err != nil {
+		slog.Error("render task-list", "err", err)
+	}
+}
+
 func (s *Server) buildPageData(cfg *config.Config) PageData {
 	views := make([]ProjectView, 0, len(cfg.Projects))
 	for _, p := range cfg.Projects {
@@ -140,6 +181,12 @@ func (s *Server) buildPageData(cfg *config.Config) PageData {
 
 		if info, err := os.Stat(filepath.Join(p.Path, "CLAUDE.md")); err == nil {
 			view.ContextFileMod = relativeTime(info.ModTime())
+		}
+
+		if p.TasksFile != "" {
+			if items, err := task.Load(task.ResolvePath(p.Path, p.TasksFile)); err == nil {
+				view.TaskItems = items
+			}
 		}
 
 		views = append(views, view)

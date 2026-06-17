@@ -104,14 +104,18 @@ func (s *Server) handleProjects(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleOpen(w http.ResponseWriter, r *http.Request) {
 	name := chi.URLParam(r, "name")
-	p, err := project.Find(s.cfg, name)
+	cfg, err := config.Load()
+	if err != nil {
+		cfg = s.cfg
+	}
+	p, err := project.Find(cfg, name)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 	editor := ""
 	if p.Launch.Editor {
-		editor = s.cfg.Settings.Editor
+		editor = cfg.Settings.Editor
 	}
 	if err := launcher.OpenBackground(p.Path, editor, p.Launch.Commands); err != nil {
 		slog.Error("open project", "name", name, "err", err)

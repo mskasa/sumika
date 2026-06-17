@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -76,9 +77,12 @@ func (a *Adapter) GetSessionSummary(projectPath string) (*adapter.SessionSummary
 		return nil, fmt.Errorf("read session dir: %w", err)
 	}
 
-	// 最新のJSONLファイルを探す
-	var latestFile string
-	var latestMod time.Time
+	// JSONLファイルを新しい順に並べる
+	type sessionFile struct {
+		path    string
+		modTime time.Time
+	}
+	var files []sessionFile
 	for _, e := range entries {
 		if e.IsDir() || !strings.HasSuffix(e.Name(), ".jsonl") {
 			continue
@@ -87,18 +91,34 @@ func (a *Adapter) GetSessionSummary(projectPath string) (*adapter.SessionSummary
 		if err != nil {
 			continue
 		}
-		if info.ModTime().After(latestMod) {
-			latestMod = info.ModTime()
-			latestFile = filepath.Join(sessionDir, e.Name())
-		}
+		files = append(files, sessionFile{
+			path:    filepath.Join(sessionDir, e.Name()),
+			modTime: info.ModTime(),
+		})
 	}
-	if latestFile == "" {
+	if len(files) == 0 {
 		return nil, nil
 	}
+	sort.Slice(files, func(i, j int) bool {
+		return files[i].modTime.After(files[j].modTime)
+	})
 
-	summary, lastActive, err := parseLatestAssistantText(latestFile)
-	if err != nil || summary == "" {
-		return nil, err
+	// アシスタントメッセージが見つかるまで新しい順に遡る
+	var summary string
+	var lastActive time.Time
+	for _, f := range files {
+		s, t, err := parseLatestAssistantText(f.path)
+		if err != nil {
+			continue
+		}
+		if s != "" {
+			summary = s
+			lastActive = t
+			break
+		}
+	}
+	if summary == "" {
+		return nil, nil
 	}
 
 	return &adapter.SessionSummary{

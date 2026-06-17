@@ -205,8 +205,7 @@ cmd.Stderr = os.Stderr
 │ 📁 ~/projects/my-api                     │
 │ 🕐 最終更新: 2時間前                      │
 │ 📝 git: 3件の未コミット変更               │
-│ 🤖 前回AI: 認証機能のリファクタリング中   │
-│    テスト未完了                           │
+│ 📄 CLAUDE.md: 1時間前に更新              │
 │                                           │
 │ 🏷️ backend  go                           │
 └──────────────────────────────────────────┘
@@ -239,9 +238,8 @@ cmd.Stderr = os.Stderr
 
 ### Phase 3: AIコンテキスト可視化
 - [x] Claude Codeアダプターの実装(`internal/adapter/claudecode/`)
-- [x] `~/.claude/projects/`配下のJSONLセッション履歴読み込み
-- [x] 各プロジェクトカードへの「前回AIセッション要約」表示(最後のアシスタントメッセージ冒頭200文字)
 - [x] CLAUDE.mdの最終更新日時表示
+- ~~各プロジェクトカードへの「前回AIセッション要約」表示~~ → 削除済み(ADR: `docs/decisions/2026-06-17-remove-ai-session-summary-display.md`)
 
 ### Phase 4: 拡張
 - [ ] タグフィルタリング・ソート

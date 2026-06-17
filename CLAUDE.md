@@ -454,3 +454,7 @@ MIT License
 
 - [x] **グレースフルシャットダウン**: SIGINT/SIGTERM受信時に `http.Server.Shutdown` を呼び、ポートを即座に開放するよう修正済み
 - [x] **HTMXのembed化**: `htmx.min.js` を `web/static/` に同梱し、CDN依存を解消済み
+
+### Phase 3 動作確認で発見
+
+- [x] **ランチャーのstdio未継承**: `sumika open` でAIツール(claude)を起動する際、stdin/stdout/stderrを継承せずバックグラウンド起動していたためTUIが動作しなかった。`launchForeground` を追加し `cmd.Run()` でブロッキング起動するよう修正済み。Webダッシュボードの Open ボタンはターミナル不在のため `OpenBackground` に切り替えてエディタのみ起動するよう変更済み
